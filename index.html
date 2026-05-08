@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Studio Ultimate - Laiche Brahim</title>
+    <title>PWA Studio V4.1 - Laiche Brahim</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1e26">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <style>
         :root {
             --bg-color: #1e1e26;
@@ -87,65 +93,10 @@
 <canvas id="canvas512" width="512" height="512" style="display:none;"></canvas>
 <footer>Made by Laiche Brahim 2026 Paris</footer>
 
-<script>
-    let processedImageData = null;
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.getElementById('canvas512');
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, 512, 512);
-                ctx.drawImage(img, 0, 0, 512, 512);
-                processedImageData = canvas.toDataURL("image/png");
-                const btn = document.getElementById('btnImage');
-                btn.innerText = "TÉLÉCHARGER icon.png";
-                btn.classList.add('ready');
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-
-    document.getElementById('btnImage').onclick = function() {
-        if (this.classList.contains('ready')) {
-            const link = document.createElement('a');
-            link.download = 'icon.png';
-            link.href = processedImageData;
-            link.click();
-        } else {
-            document.getElementById('fileInput').click();
-        }
-    };
-
-    function generateFiles() {
-        const title = document.getElementById('appTitle').value || "App";
-        const themeColor = document.getElementById('themeColor').value;
-        const htmlField = document.getElementById('htmlInput');
-        let html = htmlField.value;
-
-        if(!html.includes('<head')) {
-            alert("Erreur : Collez un code HTML complet (incluant <head> et <body>)");
-            return;
-        }
-
-        // 1. Préparation des balises HEAD
-        const headTags = `
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="${themeColor}">
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">`;
-
-        // 2. Préparation du script BODY
-        const bodyTags = `
     <style>
         #pwaInstallBtn {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: ${themeColor}; color: white; border: none; padding: 12px 24px;
+            background: #1e1e26; color: white; border: none; padding: 12px 24px;
             border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             display: none; z-index: 10000; font-weight: bold; cursor: pointer;
         }
@@ -171,44 +122,6 @@
                 navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
             });
         }
-    <\/script>`;
-
-        // Nettoyage et Insertion propre
-        html = html.replace('</head>', headTags + '\n</head>');
-        html = html.replace('</body>', bodyTags + '\n</body>');
-
-        htmlField.value = html;
-        document.getElementById('htmlCopyBtn').style.display = 'block';
-        document.getElementById('results').style.display = 'block';
-
-        // Manifest
-        document.getElementById('manifestOutput').value = JSON.stringify({
-            "short_name": title,
-            "name": title,
-            "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
-            "start_url": "./index.html",
-            "display": "standalone",
-            "theme_color": themeColor,
-            "background_color": themeColor
-        }, null, 4);
-
-        // Service Worker
-        document.getElementById('swOutput').value = `const CACHE = 'v1';
-const assets = ['./', './index.html', './manifest.json', './icon.png'];
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(assets))));
-self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));`;
-    }
-
-    function copyToClipboard(id) {
-        const copyText = document.getElementById(id);
-        copyText.select();
-        navigator.clipboard.writeText(copyText.value);
-        const btn = event.currentTarget;
-        const oldText = btn.innerText;
-        btn.innerText = "Copié !";
-        btn.style.background = "#28a745";
-        setTimeout(() => { btn.innerText = oldText; btn.style.background = "#444"; }, 1500);
-    }
-</script>
+    </script>
 </body>
 </html>

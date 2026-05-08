@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Studio V4 - Laiche Brahim</title>
+    <title>PWA Studio Ultimate - Laiche Brahim</title>
     <style>
         :root {
             --bg-color: #1e1e26;
@@ -26,88 +26,30 @@
         }
 
         h2 { text-align: center; font-weight: 300; color: var(--accent-color); margin-bottom: 20px; }
-        
         .container { flex: 1; max-width: 650px; margin: 0 auto; width: 100%; }
-
-        .section {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
+        .section { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; box-sizing: border-box; }
         label { font-size: 0.75em; color: #888; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-
-        input[type="text"], input[type="color"], textarea {
-            width: 100%;
-            background: #121218;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #00ffc8;
-            padding: 12px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
+        input[type="text"], input[type="color"], textarea { width: 100%; background: #121218; border: 1px solid #333; border-radius: 8px; color: #00ffc8; padding: 12px; box-sizing: border-box; font-size: 14px; }
         input[type="color"] { height: 50px; padding: 5px; cursor: pointer; }
-
         textarea { height: 130px; font-family: 'Courier New', monospace; resize: vertical; }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background: var(--accent-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 5px;
-        }
-
-        button:active { opacity: 0.8; transform: translateY(1px); }
-
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--accent-color); color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
         #btnImage.ready { background: var(--success-color); }
-
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        
-        .copy-btn {
-            background: #444;
-            font-size: 0.7em;
-            padding: 5px 10px;
-            width: auto;
-            border-radius: 4px;
-            margin-top: 0;
-        }
-
+        .copy-btn { background: #444; font-size: 0.7em; padding: 5px 10px; width: auto; border-radius: 4px; }
         .results-area { display: none; }
         #htmlCopyBtn { display: none; }
-
-        footer {
-            text-align: center;
-            font-size: 0.75em;
-            color: #555;
-            padding: 30px 0;
-            margin-top: auto;
-        }
-
+        footer { text-align: center; font-size: 0.75em; color: #555; padding: 30px 0; margin-top: auto; }
         #fileInput { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>PWA Studio V4</h2>
+    <h2>PWA Studio V4.1</h2>
 
     <div class="section">
-        <div style="margin-bottom: 15px;">
-            <label>Titre de l'application</label>
-            <input type="text" id="appTitle" placeholder="Ex: My Portfolio App">
-        </div>
+        <label>Titre de l'application</label>
+        <input type="text" id="appTitle" placeholder="Ex: My App" style="margin-bottom:15px">
 
         <div style="display: flex; gap: 15px; margin-bottom: 15px;">
             <div style="flex: 1;">
@@ -117,50 +59,37 @@
             <div style="flex: 2;">
                 <label>Icône (PNG)</label>
                 <input type="file" id="fileInput" accept="image/*">
-                <button id="btnImage" onclick="document.getElementById('fileInput').click()" style="height: 50px; margin-top:0;">UPLOAD IMAGE</button>
+                <button id="btnImage" style="height: 50px; margin-top:0;">UPLOAD IMAGE</button>
             </div>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <div class="header-row">
-                <label>Code HTML Source</label>
-                <button id="htmlCopyBtn" class="copy-btn" onclick="copyToClipboard('htmlInput')">Copier HTML Injecté</button>
-            </div>
-            <textarea id="htmlInput" placeholder="Collez votre code HTML ici..."></textarea>
+        <div class="header-row">
+            <label>Code HTML Source</label>
+            <button id="htmlCopyBtn" class="copy-btn" onclick="copyToClipboard('htmlInput')">Copier HTML Injecté</button>
         </div>
+        <textarea id="htmlInput" placeholder="Collez votre code HTML complet ici..."></textarea>
 
-        <button onclick="generateFiles()" style="background: #6200ee; font-size: 16px;">GÉNÉRER LE PACK PWA</button>
+        <button onclick="generateFiles()" style="background: #6200ee; margin-top: 15px;">GÉNÉRER LE PACK PWA</button>
     </div>
 
     <div id="results" class="results-area">
         <div class="section">
-            <div class="header-row">
-                <label>manifest.json</label>
-                <button class="copy-btn" onclick="copyToClipboard('manifestOutput')">Copier</button>
-            </div>
+            <div class="header-row"><label>manifest.json</label><button class="copy-btn" onclick="copyToClipboard('manifestOutput')">Copier</button></div>
             <textarea id="manifestOutput" readonly></textarea>
         </div>
-
         <div class="section">
-            <div class="header-row">
-                <label>sw.js (Service Worker Offline)</label>
-                <button class="copy-btn" onclick="copyToClipboard('swOutput')">Copier</button>
-            </div>
+            <div class="header-row"><label>sw.js</label><button class="copy-btn" onclick="copyToClipboard('swOutput')">Copier</button></div>
             <textarea id="swOutput" readonly></textarea>
         </div>
     </div>
 </div>
 
 <canvas id="canvas512" width="512" height="512" style="display:none;"></canvas>
-
-<footer>
-    Made by Laiche Brahim 2026 Paris
-</footer>
+<footer>Made by Laiche Brahim 2026 Paris</footer>
 
 <script>
     let processedImageData = null;
 
-    // Gestion de l'image
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -182,17 +111,12 @@
         reader.readAsDataURL(file);
     });
 
-    function downloadIcon() {
-        if (!processedImageData) return;
-        const link = document.createElement('a');
-        link.download = 'icon.png';
-        link.href = processedImageData;
-        link.click();
-    }
-
     document.getElementById('btnImage').onclick = function() {
         if (this.classList.contains('ready')) {
-            downloadIcon();
+            const link = document.createElement('a');
+            link.download = 'icon.png';
+            link.href = processedImageData;
+            link.click();
         } else {
             document.getElementById('fileInput').click();
         }
@@ -202,19 +126,22 @@
         const title = document.getElementById('appTitle').value || "App";
         const themeColor = document.getElementById('themeColor').value;
         const htmlField = document.getElementById('htmlInput');
-        let htmlContent = htmlField.value;
+        let html = htmlField.value;
 
-        if(!htmlContent.includes('<html')) {
-            alert("Veuillez coller un code HTML complet.");
+        if(!html.includes('<head')) {
+            alert("Erreur : Collez un code HTML complet (incluant <head> et <body>)");
             return;
         }
 
-        // Script d'installation et PWA tags
-        const pwaInjection = `
+        // 1. Préparation des balises HEAD
+        const headTags = `
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="${themeColor}">
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">`;
+
+        // 2. Préparation du script BODY
+        const bodyTags = `
     <style>
         #pwaInstallBtn {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -235,73 +162,41 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') document.getElementById('pwaInstallBtn').style.display = 'none';
                 deferredPrompt = null;
+                document.getElementById('pwaInstallBtn').style.display = 'none';
             }
         });
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
+            });
         }
     <\/script>`;
 
-        // Injection avant 
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00cc9c">
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <style>
-        #pwaInstallBtn {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #00cc9c; color: white; border: none; padding: 12px 24px;
-            border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            display: none; z-index: 10000; font-weight: bold; cursor: pointer;
-        }
-    </style>
-    <button id="pwaInstallBtn">Installer l'application</button>
-    <script>
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('pwaInstallBtn').style.display = 'block';
-        });
-        document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') document.getElementById('pwaInstallBtn').style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
-        }
-    </script>
-</body>
-        if(htmlContent.includes('</body>')) {
-            htmlContent = htmlContent.replace('</body>', pwaInjection + '\n</body>');
-        } else {
-            htmlContent += pwaInjection;
-        }
+        // Nettoyage et Insertion propre
+        html = html.replace('</head>', headTags + '\n</head>');
+        html = html.replace('</body>', bodyTags + '\n</body>');
 
-        htmlField.value = htmlContent;
+        htmlField.value = html;
         document.getElementById('htmlCopyBtn').style.display = 'block';
         document.getElementById('results').style.display = 'block';
 
         // Manifest
-        const manifest = {
+        document.getElementById('manifestOutput').value = JSON.stringify({
             "short_name": title,
             "name": title,
-            "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}],
+            "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
             "start_url": "./index.html",
             "display": "standalone",
             "theme_color": themeColor,
             "background_color": themeColor
-        };
-        document.getElementById('manifestOutput').value = JSON.stringify(manifest, null, 4);
+        }, null, 4);
 
         // Service Worker
-        document.getElementById('swOutput').value = `const CACHE = 'v1';\nself.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json', './icon.png']))));\nself.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));`;
+        document.getElementById('swOutput').value = `const CACHE = 'v1';
+const assets = ['./', './index.html', './manifest.json', './icon.png'];
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(assets))));
+self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));`;
     }
 
     function copyToClipboard(id) {
@@ -309,15 +204,11 @@
         copyText.select();
         navigator.clipboard.writeText(copyText.value);
         const btn = event.currentTarget;
-        const originalText = btn.innerText;
+        const oldText = btn.innerText;
         btn.innerText = "Copié !";
         btn.style.background = "#28a745";
-        setTimeout(() => { 
-            btn.innerText = originalText; 
-            btn.style.background = "#444";
-        }, 1500);
+        setTimeout(() => { btn.innerText = oldText; btn.style.background = "#444"; }, 1500);
     }
 </script>
-
 </body>
 </html>

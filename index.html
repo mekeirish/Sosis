@@ -2,367 +2,336 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio Audio Slicer v2 - Video Render</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saucisse Audio Studio v2</title>
     
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 
     <style>
         :root {
-            --bg-deep: #0f0f11;
-            --bg-panel: #18181b;
-            --bg-grid: #0a0a0c;
-            --text-main: #e0e0e0;
-            --text-dim: #888;
-            --accent-neon: #00e5ff;
-            --accent-purple: #8b5cf6;
-            --accent-pink: #ec4899;
-            --accent-green: #10b981;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-            --border: #2a2a30;
+            --bg-deep: #0f0f11; --bg-panel: #18181b; --text-main: #e0e0e0;
+            --text-dim: #888; --accent-neon: #00e5ff; --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899; --accent-green: #10b981; --accent-red: #ef4444;
+            --accent-amber: #f59e0b; --border: #2a2a30;
         }
 
         body {
-            background-color: var(--bg-deep);
-            background-image: radial-gradient(circle at 50% 0%, #1f1f23 0%, var(--bg-deep) 70%);
-            color: var(--text-main);
+            background: var(--bg-deep); color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            margin: 0; padding: 10px; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
 
-        .container { width: 100%; max-width: 550px; }
-        h2 { text-align: center; color: var(--accent-neon); margin: 10px 0 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 1.2rem; }
+        .container { width: 100%; max-width: 550px; padding-bottom: 20px; }
+        h2 { text-align: center; color: var(--accent-neon); text-transform: uppercase; letter-spacing: 2px; font-size: 1.2rem; margin: 10px 0;}
 
         .studio-panel {
             background: var(--bg-panel); padding: 15px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid var(--border); margin-bottom: 15px;
+            border: 1px solid var(--border); margin-bottom: 15px;
         }
-
-        input[type="file"] { width: 100%; color: var(--text-dim); font-size: 12px; margin-bottom: 10px; }
-
-        #status-message { font-size: 0.8em; color: #f1c40f; text-align: center; margin-bottom: 5px; font-weight: bold;}
 
         #waveform-container {
-            background: var(--bg-grid); background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 20px 20px; border-radius: 8px 8px 0 0; position: relative; border: 1px solid rgba(0,229,255,0.2); overflow: hidden;
+            background: #000; border-radius: 8px 8px 0 0; position: relative;
+            border: 1px solid rgba(0,229,255,0.2); overflow: hidden; height: 120px;
         }
-        #waveform { width: 100%; min-height: 120px; }
+        #waveform { width: 100%; }
 
-        .progress-container { width: 100%; height: 6px; background: #222; border-radius: 0 0 8px 8px; margin-bottom: 10px; overflow: hidden; border: 1px solid rgba(0,229,255,0.2); border-top: none;}
-        #progress-bar { width: 0%; height: 100%; background: var(--accent-neon); box-shadow: 0 0 10px var(--accent-neon); }
+        .progress-container { width: 100%; height: 6px; background: #222; border-radius: 0 0 8px 8px; margin-bottom: 10px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: var(--accent-neon); }
 
-        .time-display { text-align: center; font-family: monospace; font-size: 1.1em; color: var(--accent-neon); background: #050505; padding: 6px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #333; }
+        .time-display {
+            text-align: center; font-family: monospace; font-size: 1.1em;
+            color: var(--accent-neon); background: #050505; padding: 6px; border-radius: 6px; margin-bottom: 10px;
+        }
 
         .main-controls { display: flex; flex-direction: column; gap: 10px; }
-        .transport-row { display: flex; justify-content: space-between; gap: 10px; }
+        .transport-row { display: flex; gap: 8px; }
         
         button {
             background: #2a2a30; color: #fff; border: 1px solid #3f3f46; padding: 12px; border-radius: 8px;
-            font-weight: bold; cursor: pointer; flex: 1; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+            font-weight: bold; cursor: pointer; flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.3; }
 
-        .btn-play-pause { background: var(--accent-green); color: #000; flex: 2;}
-        .btn-cut { background: var(--accent-red); color: #fff; flex: 1.5; }
-        .btn-create { 
-            background: var(--accent-neon); color: #000; width: 100%; padding: 15px; 
-            font-weight: 800; letter-spacing: 1px; margin-top: 5px;
+        .btn-play-pause { background: var(--accent-green); color: #000; flex: 1.5;}
+        .btn-stop { color: var(--accent-amber); flex: 0.8; }
+        .btn-reset { color: var(--text-dim); flex: 0.8; }
+        .btn-cut { background: var(--accent-red); }
+        .btn-range-start { background: var(--accent-purple); }
+        .btn-range-end { background: var(--accent-pink); }
+        
+        .switch-container {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #0a0a0c; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222;
         }
-        .btn-create.rendering { background: var(--accent-amber); }
-        .btn-create.download { background: var(--accent-purple); color: white; }
-
-        /* Switch Mode */
-        .switch-container { display: flex; justify-content: space-between; align-items: center; background: #0a0a0c; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: #888; transition: .3s; border-radius: 50%; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333; transition: .3s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: #888; transition: .3s; border-radius: 50%;
+        }
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(22px); background-color: #fff; }
 
-        .mode-slice, .mode-range { display: none; gap: 10px; flex: 1.5; }
-        .mode-active { display: flex; }
+        .export-actions { display: none; gap: 10px; margin-top: 5px; }
+        .btn-main-action { background: var(--accent-neon); color: #000; border: none; font-weight: 800; width: 100%; padding: 15px; }
 
-        /* Liste des segments */
         .segment-item {
-            background: var(--bg-panel); padding: 12px; margin-bottom: 8px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border); border-left: 4px solid var(--accent-neon);
+            background: var(--bg-panel); padding: 10px; margin-bottom: 8px; border-radius: 8px;
+            display: flex; align-items: center; gap: 10px; border: 1px solid var(--border);
         }
-        .seg-info { flex: 1; }
-        .seg-title { font-weight: bold; font-size: 13px; display: block; }
-        .seg-duration { font-size: 11px; color: var(--text-dim); }
-        
-        .img-upload-label {
-            background: #333; color: white; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 12px;
-            display: flex; align-items: center; gap: 5px; border: 1px dashed var(--accent-neon);
+        .seg-thumb { width: 45px; height: 45px; border-radius: 4px; object-fit: cover; background: #000; }
+        .seg-info { flex: 1; display: flex; flex-direction: column; }
+        .seg-title { font-weight: bold; font-size: 13px; }
+        .seg-meta { font-size: 10px; color: var(--text-dim); font-family: monospace; }
+        .btn-img { background: #333; width: 38px; padding: 10px; }
+        .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid var(--accent-red); width: 38px; }
+
+        #side-confirm {
+            position: fixed; top: 0; right: -100%; width: 80%; height: 100%;
+            background: rgba(15, 15, 17, 0.95); backdrop-filter: blur(10px);
+            z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border-left: 2px solid var(--accent-red);
         }
-        .img-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: none; margin-left: 10px; border: 1px solid var(--accent-neon); }
+        #side-confirm.show { right: 0; }
 
-        .cut-marker { position: absolute; top: 0; width: 2px; height: 100%; background-color: var(--accent-red); z-index: 10; pointer-events: none;}
-        .range-region { position: absolute; top: 0; height: 100%; z-index: 5; background: rgba(139, 92, 246, 0.2); border-left: 2px solid var(--accent-purple); pointer-events: none; }
+        .range-region { position: absolute; top: 0; height: 100%; background: rgba(139, 92, 246, 0.2); border-left: 2px solid var(--accent-purple); border-right: 2px solid var(--accent-pink); z-index: 5; pointer-events: none;}
+        .cut-marker { position: absolute; top: 0; width: 2px; height: 100%; background: var(--accent-red); z-index: 10; pointer-events: none;}
 
-        .signature { font-size: 9px; color: var(--text-dim); text-align: center; width: 100%; margin-top: 20px; letter-spacing: 1px; text-transform: uppercase; }
+        .signature-footer { font-size: 9px; color: var(--text-dim); text-align: center; margin: 20px 0; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; }
     </style>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#37b860">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <div class="container">
-    <h2>STUDIO Slicer & Render</h2>
+    <h2>SAUCISSE SLICER</h2>
     
     <div class="studio-panel">
         <input type="file" id="audio-input" accept="audio/*">
-        <div id="status-message">AWAITING AUDIO...</div>
+        <div id="status-message" style="text-align:center; font-size: 11px; margin-bottom:5px; color: var(--accent-amber);">Ready</div>
         
-        <div id="waveform-container">
-            <div id="waveform"></div>
-        </div>
-        <div class="progress-container">
-            <div id="progress-bar"></div>
-        </div>
-        
+        <div id="waveform-container"><div id="waveform"></div></div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
         <div class="time-display" id="time-display">00:00.0 / 00:00.0</div>
 
         <div class="switch-container">
-            <span style="font-size: 10px">SLICE</span>
+            <span style="font-size:11px; font-weight:bold;">SLICE</span>
             <label class="switch">
                 <input type="checkbox" id="mode-switch">
                 <span class="slider"></span>
             </label>
-            <span style="font-size: 10px">RANGE</span>
+            <span style="font-size:11px; font-weight:bold;">RANGE</span>
         </div>
 
         <div class="main-controls">
             <div class="transport-row">
-                <button id="btn-stop" disabled><i class="fas fa-stop"></i></button>
+                <button class="btn-reset" id="btn-reset" title="Reset" disabled><i class="fas fa-undo"></i></button>
+                <button class="btn-stop" id="btn-stop" disabled><i class="fas fa-stop"></i></button>
                 <button class="btn-play-pause" id="btn-play-pause" disabled><i class="fas fa-play" id="play-icon"></i></button>
-                
-                <div class="mode-slice mode-active" id="ctrl-slice">
-                    <button class="btn-cut" id="btn-cut" disabled><i class="fas fa-scissors"></i></button>
-                </div>
-
-                <div class="mode-range" id="ctrl-range">
-                    <button class="btn-start" id="btn-start" disabled><i class="fas fa-marker"></i></button>
-                </div>
             </div>
-
-            <button class="btn-create" id="btn-main-action" disabled>1. DÉCOUPER LES MORCEAUX</button>
+            
+            <div class="transport-row" id="tools-row">
+                <button class="btn-cut" id="btn-cut" disabled><i class="fas fa-scissors"></i> COUPER</button>
+                <button class="btn-range-start" id="btn-range-start" style="display:none;" disabled><i class="fas fa-sign-in-alt"></i> IN</button>
+                <button class="btn-range-end" id="btn-range-end" style="display:none;" disabled><i class="fas fa-sign-out-alt"></i> OUT</button>
+            </div>
+            
+            <button class="btn-main-action" id="btn-generate" disabled>GÉNÉRER LES MORCEAUX</button>
+            
+            <div class="export-actions" id="export-actions">
+                <button style="background:var(--accent-purple);" id="btn-zip-full">ZIP COMPLET</button>
+                <button style="background:#444;" id="btn-zip-audio">AUDIO SEUL</button>
+            </div>
         </div>
     </div>
 
     <div id="segments-list"></div>
+    <div class="signature-footer">Made by Laiche Brahim • 2026 Paris</div>
 </div>
 
-<div class="signature">Studio Engine v2.5 • 2026</div>
+<div id="side-confirm">
+    <div style="text-align:center; padding:20px;">
+        <i class="fas fa-trash fa-3x" style="color:var(--accent-red); margin-bottom:15px;"></i>
+        <h3>Supprimer ?</h3>
+        <button onclick="confirmDeletion()" style="background:var(--accent-red); width:100%; margin-bottom:10px;">OUI</button>
+        <button onclick="hideConfirm()" style="background:transparent; border:1px solid #555; width:100%;">NON</button>
+    </div>
+</div>
 
 <script>
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-
     let ws, audioBuffer = null;
-    let cuts = [0], ranges = [], isRangeMode = false;
-    let segmentsData = []; // Stocke {blob, imgBlob, duration}
-    let finalVideoUrl = null;
+    let cuts = [0], ranges = [], tempStart = null, segmentsData = [];
+    let deleteIdTarget = null;
 
-    const statusMsg = document.getElementById('status-message');
-    const mainBtn = document.getElementById('btn-main-action');
-    const segmentsList = document.getElementById('segments-list');
-
-    // Init Wavesurfer
     ws = WaveSurfer.create({
-        container: '#waveform',
-        waveColor: '#00e5ff66',
-        progressColor: 'transparent',
-        cursorColor: '#fff',
-        height: 100,
-        barWidth: 2
+        container: '#waveform', waveColor: '#333', progressColor: 'transparent',
+        cursorColor: '#fff', height: 120, barWidth: 2, dragToSeek: true
     });
 
-    // Chargement Audio
+    const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${Math.floor(s%60).toString().padStart(2,'0')}.${Math.floor((s%1)*10)}`;
+
     document.getElementById('audio-input').onchange = async e => {
         const file = e.target.files[0];
         if (!file) return;
-        statusMsg.innerText = "LOADING...";
-        const url = URL.createObjectURL(file);
-        ws.load(url);
-        const arrayBuffer = await file.arrayBuffer();
-        const audioCtx = new AudioContext();
-        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        statusMsg.innerText = "READY";
+        ws.load(URL.createObjectURL(file));
+        const ab = await file.arrayBuffer();
+        audioBuffer = await new (window.AudioContext || window.webkitAudioContext)().decodeAudioData(ab);
         document.querySelectorAll('button').forEach(b => b.disabled = false);
+        resetFull();
     };
 
-    // Mode Toggle
-    document.getElementById('mode-switch').onchange = e => {
-        isRangeMode = e.target.checked;
-        document.getElementById('ctrl-slice').classList.toggle('mode-active', !isRangeMode);
-        document.getElementById('ctrl-range').classList.toggle('mode-active', isRangeMode);
-    };
+    function resetFull() {
+        cuts = [0]; ranges = []; tempStart = null; segmentsData = [];
+        document.getElementById('segments-list').innerHTML = "";
+        document.querySelectorAll('.cut-marker, .range-region').forEach(m => m.remove());
+        document.getElementById('export-actions').style.display = 'none';
+        document.getElementById('btn-generate').style.display = 'block';
+    }
 
-    // UI Helpers
+    document.getElementById('btn-reset').onclick = resetFull;
+
+    document.getElementById('btn-stop').onclick = () => { ws.stop(); ws.seekTo(0); };
+
     ws.on('audioprocess', t => {
-        const p = (t / ws.getDuration()) * 100;
-        document.getElementById('progress-bar').style.width = p + '%';
-        document.getElementById('time-display').innerText = `${t.toFixed(1)}s / ${ws.getDuration().toFixed(1)}s`;
+        document.getElementById('progress-bar').style.width = (t/ws.getDuration()*100)+'%';
+        document.getElementById('time-display').innerText = `${formatTime(t)} / ${formatTime(ws.getDuration())}`;
     });
 
-    document.getElementById('btn-play-pause').onclick = () => ws.isPlaying() ? ws.pause() : ws.play();
+    // --- LOGIQUE MODE SWITCH ---
+    document.getElementById('mode-switch').onchange = (e) => {
+        const isRange = e.target.checked;
+        document.getElementById('btn-cut').style.display = isRange ? 'none' : 'flex';
+        document.getElementById('btn-range-start').style.display = isRange ? 'flex' : 'none';
+        document.getElementById('btn-range-end').style.display = isRange ? 'flex' : 'none';
+        resetFull();
+    };
+
+    // --- MARQUAGE ---
     document.getElementById('btn-cut').onclick = () => {
         const t = ws.getCurrentTime();
-        cuts.push(t); cuts.sort((a,b)=>a-b);
-        drawMarker(t);
+        cuts.push(t);
+        drawMarker(t, 'cut-marker');
     };
 
-    function drawMarker(t) {
-        const m = document.createElement('div');
-        m.className = 'cut-marker';
-        m.style.left = (t / ws.getDuration() * 100) + '%';
-        document.getElementById('waveform').appendChild(m);
+    document.getElementById('btn-range-start').onclick = () => {
+        tempStart = ws.getCurrentTime();
+        document.querySelectorAll('.temp-m').forEach(m => m.remove());
+        drawMarker(tempStart, 'cut-marker temp-m');
+    };
+
+    document.getElementById('btn-range-end').onclick = () => {
+        if(tempStart === null) return;
+        let s = tempStart, e = ws.getCurrentTime();
+        if(e < s) [s,e] = [e,s];
+        ranges.push({start: s, end: e});
+        const reg = document.createElement('div');
+        reg.className = 'range-region';
+        reg.style.left = (s/ws.getDuration()*100)+'%';
+        reg.style.width = ((e-s)/ws.getDuration()*100)+'%';
+        document.getElementById('waveform-container').appendChild(reg);
+        tempStart = null;
+        document.querySelectorAll('.temp-m').forEach(m => m.remove());
+    };
+
+    function drawMarker(t, cls) {
+        const m = document.createElement('div'); m.className = cls;
+        m.style.left = (t/ws.getDuration()*100)+'%';
+        document.getElementById('waveform-container').appendChild(m);
     }
 
-    // ACTION PRINCIPALE
-    mainBtn.onclick = async () => {
-        if (mainBtn.classList.contains('download')) {
-            const a = document.createElement('a');
-            a.href = finalVideoUrl;
-            a.download = "studio_render.mp4";
-            a.click();
-            return;
-        }
-
-        if (mainBtn.classList.contains('rendering')) return;
-
-        // ETAPE 1: Générer la liste si elle est vide
-        if (segmentsData.length === 0) {
-            await prepareSegments();
-            mainBtn.innerText = "2. RENDER VIDEO (.MP4)";
-            return;
-        }
-
-        // ETAPE 2: Lancer le rendu FFmpeg
-        await startVideoRendering();
-    };
-
-    async function prepareSegments() {
-        segmentsList.innerHTML = "Processing audio...";
+    // --- GÉNÉRATION ---
+    document.getElementById('btn-generate').onclick = async () => {
         segmentsData = [];
-        let points = isRangeMode ? ranges : [...new Set([...cuts, ws.getDuration()])].sort((a,b)=>a-b);
+        const list = document.getElementById('segments-list');
+        list.innerHTML = "";
         
-        for (let i = 0; i < points.length - 1; i++) {
-            const start = points[i], end = points[i+1];
-            if (end - start < 0.2) continue;
-
-            const audioBlob = await getSegmentBlob(start, end);
-            const id = Date.now() + i;
-            
-            const item = document.createElement('div');
-            item.className = 'segment-item';
-            item.innerHTML = `
-                <div class="seg-info">
-                    <span class="seg-title">PARTIE ${i+1}</span>
-                    <span class="seg-duration">${(end-start).toFixed(2)}s</span>
-                </div>
-                <label class="img-upload-label" for="img-${id}">
-                    <i class="fas fa-image"></i> PHOTO
-                    <input type="file" id="img-${id}" accept="image/*" hidden>
-                </label>
-                <img id="prev-${id}" class="img-preview">
-            `;
-            
-            segmentsList.appendChild(item);
-            
-            const input = item.querySelector('input');
-            input.onchange = async (e) => {
-                const f = e.target.files[0];
-                const prev = document.getElementById(`prev-${id}`);
-                prev.src = URL.createObjectURL(f);
-                prev.style.display = 'block';
-                segmentsData[i].imgBlob = f;
-            };
-
-            segmentsData.push({ audioBlob, imgBlob: null, duration: end - start });
+        let regions = [];
+        if(!document.getElementById('mode-switch').checked) {
+            let times = [...new Set([...cuts, ws.getDuration()])].sort((a,b) => a-b);
+            for(let i=0; i < times.length-1; i++) regions.push({s: times[i], e: times[i+1]});
+        } else {
+            regions = ranges.map(r => ({s: r.start, e: r.end}));
         }
-        segmentsList.prepend(document.createElement('hr'));
+
+        for(let i=0; i < regions.length; i++) {
+            const dur = regions[i].e - regions[i].s;
+            if(dur < 0.1) continue;
+            const blob = await getSegmentBlob(regions[i].s, regions[i].e);
+            const seg = { id: i, audio: blob, image: null, name: `s${i+1}`, duration: dur };
+            segmentsData.push(seg);
+            renderItem(seg);
+        }
+        document.getElementById('btn-generate').style.display = 'none';
+        document.getElementById('export-actions').style.display = 'flex';
+    };
+
+    function renderItem(seg) {
+        const div = document.createElement('div');
+        div.className = 'segment-item';
+        div.id = `seg-row-${seg.id}`;
+        div.innerHTML = `<img class="seg-thumb" id="thumb-${seg.id}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+            <div class="seg-info"><span class="seg-title">${seg.name}.mp3</span><span class="seg-meta">${seg.duration.toFixed(2)}s</span></div>
+            <button class="btn-img" onclick="document.getElementById('img-${seg.id}').click()"><i class="fas fa-image"></i></button>
+            <button class="btn-delete" onclick="showConfirm(${seg.id})"><i class="fas fa-times"></i></button>
+            <input type="file" id="img-${seg.id}" hidden accept="image/*" onchange="handleImg(this, ${seg.id})">`;
+        document.getElementById('segments-list').appendChild(div);
     }
 
-    async function startVideoRendering() {
-        if (!ffmpeg.isLoaded()) {
-            statusMsg.innerText = "LOADING ENGINE...";
-            await ffmpeg.load();
+    window.handleImg = (input, id) => {
+        const file = input.files[0];
+        if(file) {
+            segmentsData.find(s => s.id === id).image = file;
+            document.getElementById(`thumb-${id}`).src = URL.createObjectURL(file);
         }
+    };
 
-        mainBtn.disabled = true;
-        mainBtn.classList.add('rendering');
-        
-        try {
-            const inputPaths = [];
-            
-            for (let i = 0; i < segmentsData.length; i++) {
-                const seg = segmentsData[i];
-                const audioName = `a${i}.wav`;
-                const imgName = `i${i}.jpg`;
-                const outName = `v${i}.mp4`;
+    window.showConfirm = (id) => { deleteIdTarget = id; document.getElementById('side-confirm').classList.add('show'); };
+    window.hideConfirm = () => document.getElementById('side-confirm').classList.remove('show');
+    window.confirmDeletion = () => {
+        segmentsData = segmentsData.filter(s => s.id !== deleteIdTarget);
+        document.getElementById(`seg-row-${deleteIdTarget}`).remove();
+        hideConfirm();
+    };
 
-                ffmpeg.FS('writeFile', audioName, await fetchFile(seg.audioBlob));
-                
-                if (seg.imgBlob) {
-                    ffmpeg.FS('writeFile', imgName, await fetchFile(seg.imgBlob));
-                } else {
-                    // Créer un fond noir si pas d'image
-                    await ffmpeg.run('-f', 'lavfi', '-i', 'color=c=black:s=720x720', '-t', '1', 'black.jpg');
-                    ffmpeg.FS('writeFile', imgName, ffmpeg.FS('readFile', 'black.jpg'));
-                }
+    document.getElementById('btn-zip-full').onclick = () => createZip(true);
+    document.getElementById('btn-zip-audio').onclick = () => createZip(false);
 
-                // Création du clip individuel (Image + Audio)
-                // On force une résolution standard 720x720 (Carré type Instagram/TikTok)
-                await ffmpeg.run(
-                    '-loop', '1', '-i', imgName, 
-                    '-i', audioName, 
-                    '-c:v', 'libx264', '-t', seg.duration.toString(), 
-                    '-pix_fmt', 'yuv420p', '-vf', 'scale=720:720',
-                    outName
-                );
-                inputPaths.push(`file ${outName}`);
-            }
-
-            // Concaténation de tous les clips
-            ffmpeg.FS('writeFile', 'concat.txt', inputPaths.join('\n'));
-            statusMsg.innerText = "FUSING CLIPS...";
-            
-            await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'final.mp4');
-
-            const data = ffmpeg.FS('readFile', 'final.mp4');
-            finalVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-            
-            mainBtn.disabled = false;
-            mainBtn.innerText = "DOWNLOAD VIDEO";
-            mainBtn.classList.remove('rendering');
-            mainBtn.classList.add('download');
-            statusMsg.innerText = "RENDER COMPLETE!";
-            statusMsg.style.color = "var(--accent-green)";
-
-        } catch (err) {
-            console.error(err);
-            statusMsg.innerText = "RENDER ERROR";
-            mainBtn.disabled = false;
-        }
+    async function createZip(img) {
+        const zip = new JSZip();
+        segmentsData.forEach(s => {
+            zip.file(`${s.name}.mp3`, s.audio);
+            if(img && s.image) zip.file(`${s.name}image.${s.image.name.split('.').pop()}`, s.image);
+        });
+        const content = await zip.generateAsync({type:"blob"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = "saucisse_export.zip";
+        link.click();
     }
 
-    // Fonctions Audio existantes (simplifiées)
     async function getSegmentBlob(start, end) {
         const sr = audioBuffer.sampleRate;
         const len = Math.floor((end - start) * sr);
-        const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, len, sr);
-        const source = offlineCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(offlineCtx.destination);
-        source.start(0, start, end - start);
-        const renderedBuffer = await offlineCtx.startRendering();
-        return bufferToWave(renderedBuffer, len);
+        const ctx = new OfflineAudioContext(audioBuffer.numberOfChannels, len, sr);
+        const src = ctx.createBufferSource();
+        src.buffer = audioBuffer;
+        src.connect(ctx.destination);
+        src.start(0, start, end - start);
+        const rendered = await ctx.startRendering();
+        return bufferToWave(rendered, len);
     }
 
     function bufferToWave(abuffer, len) {
@@ -385,6 +354,41 @@
         }
         return new Blob([buffer], { type: "audio/wav" });
     }
+
+    document.getElementById('btn-play-pause').onclick = () => ws.isPlaying() ? ws.pause() : ws.play();
+    ws.on('play', () => document.getElementById('play-icon').className = 'fas fa-pause');
+    ws.on('pause', () => document.getElementById('play-icon').className = 'fas fa-play');
 </script>
+
+    <style>
+        #pwaInstallBtn {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #37b860; color: white; border: none; padding: 12px 24px;
+            border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: none; z-index: 10000; font-weight: bold; cursor: pointer;
+        }
+    </style>
+    <button id="pwaInstallBtn">Installer l'application</button>
+    <script>
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwaInstallBtn').style.display = 'block';
+        });
+        document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('pwaInstallBtn').style.display = 'none';
+            }
+        });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
+            });
+        }
+    </script>
 </body>
 </html>

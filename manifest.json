@@ -1,6 +1,6 @@
 {
-    "short_name": "PWA Studio",
-    "name": "PWA Studio V4.1",
+    "short_name": "Sosis",
+    "name": "Sosis",
     "icons": [
         {
             "src": "icon.png",
@@ -11,6 +11,6 @@
     ],
     "start_url": "./index.html",
     "display": "standalone",
-    "theme_color": "#1e1e26",
-    "background_color": "#1e1e26"
+    "theme_color": "#00c96b",
+    "background_color": "#00c96b"
 }

@@ -3,100 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Studio V4.1 - Laiche Brahim</title>
+    <title>Studio Audio Slicer v2 - Video Render</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e1e26">
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #1e1e26;
-            --accent-color: #4a90e2;
-            --success-color: #28a745;
-            --text-color: #e0e0e0;
-            --card-bg: #252530;
+            --bg-deep: #0f0f11;
+            --bg-panel: #18181b;
+            --bg-grid: #0a0a0c;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --accent-neon: #00e5ff;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --border: #2a2a30;
         }
 
         body {
+            background-color: var(--bg-deep);
+            background-image: radial-gradient(circle at 50% 0%, #1f1f23 0%, var(--bg-deep) 70%);
+            color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            padding: 15px;
-            box-sizing: border-box;
+            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
         }
 
-        h2 { text-align: center; font-weight: 300; color: var(--accent-color); margin-bottom: 20px; }
-        .container { flex: 1; max-width: 650px; margin: 0 auto; width: 100%; }
-        .section { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; box-sizing: border-box; }
-        label { font-size: 0.75em; color: #888; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input[type="text"], input[type="color"], textarea { width: 100%; background: #121218; border: 1px solid #333; border-radius: 8px; color: #00ffc8; padding: 12px; box-sizing: border-box; font-size: 14px; }
-        input[type="color"] { height: 50px; padding: 5px; cursor: pointer; }
-        textarea { height: 130px; font-family: 'Courier New', monospace; resize: vertical; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: var(--accent-color); color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
-        #btnImage.ready { background: var(--success-color); }
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .copy-btn { background: #444; font-size: 0.7em; padding: 5px 10px; width: auto; border-radius: 4px; }
-        .results-area { display: none; }
-        #htmlCopyBtn { display: none; }
-        footer { text-align: center; font-size: 0.75em; color: #555; padding: 30px 0; margin-top: auto; }
-        #fileInput { display: none; }
+        .container { width: 100%; max-width: 550px; }
+        h2 { text-align: center; color: var(--accent-neon); margin: 10px 0 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 1.2rem; }
+
+        .studio-panel {
+            background: var(--bg-panel); padding: 15px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid var(--border); margin-bottom: 15px;
+        }
+
+        input[type="file"] { width: 100%; color: var(--text-dim); font-size: 12px; margin-bottom: 10px; }
+
+        #status-message { font-size: 0.8em; color: #f1c40f; text-align: center; margin-bottom: 5px; font-weight: bold;}
+
+        #waveform-container {
+            background: var(--bg-grid); background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px; border-radius: 8px 8px 0 0; position: relative; border: 1px solid rgba(0,229,255,0.2); overflow: hidden;
+        }
+        #waveform { width: 100%; min-height: 120px; }
+
+        .progress-container { width: 100%; height: 6px; background: #222; border-radius: 0 0 8px 8px; margin-bottom: 10px; overflow: hidden; border: 1px solid rgba(0,229,255,0.2); border-top: none;}
+        #progress-bar { width: 0%; height: 100%; background: var(--accent-neon); box-shadow: 0 0 10px var(--accent-neon); }
+
+        .time-display { text-align: center; font-family: monospace; font-size: 1.1em; color: var(--accent-neon); background: #050505; padding: 6px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #333; }
+
+        .main-controls { display: flex; flex-direction: column; gap: 10px; }
+        .transport-row { display: flex; justify-content: space-between; gap: 10px; }
+        
+        button {
+            background: #2a2a30; color: #fff; border: 1px solid #3f3f46; padding: 12px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; flex: 1; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .btn-play-pause { background: var(--accent-green); color: #000; flex: 2;}
+        .btn-cut { background: var(--accent-red); color: #fff; flex: 1.5; }
+        .btn-create { 
+            background: var(--accent-neon); color: #000; width: 100%; padding: 15px; 
+            font-weight: 800; letter-spacing: 1px; margin-top: 5px;
+        }
+        .btn-create.rendering { background: var(--accent-amber); }
+        .btn-create.download { background: var(--accent-purple); color: white; }
+
+        /* Switch Mode */
+        .switch-container { display: flex; justify-content: space-between; align-items: center; background: #0a0a0c; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #222; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: #888; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-purple); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: #fff; }
+
+        .mode-slice, .mode-range { display: none; gap: 10px; flex: 1.5; }
+        .mode-active { display: flex; }
+
+        /* Liste des segments */
+        .segment-item {
+            background: var(--bg-panel); padding: 12px; margin-bottom: 8px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid var(--border); border-left: 4px solid var(--accent-neon);
+        }
+        .seg-info { flex: 1; }
+        .seg-title { font-weight: bold; font-size: 13px; display: block; }
+        .seg-duration { font-size: 11px; color: var(--text-dim); }
+        
+        .img-upload-label {
+            background: #333; color: white; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 12px;
+            display: flex; align-items: center; gap: 5px; border: 1px dashed var(--accent-neon);
+        }
+        .img-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; display: none; margin-left: 10px; border: 1px solid var(--accent-neon); }
+
+        .cut-marker { position: absolute; top: 0; width: 2px; height: 100%; background-color: var(--accent-red); z-index: 10; pointer-events: none;}
+        .range-region { position: absolute; top: 0; height: 100%; z-index: 5; background: rgba(139, 92, 246, 0.2); border-left: 2px solid var(--accent-purple); pointer-events: none; }
+
+        .signature { font-size: 9px; color: var(--text-dim); text-align: center; width: 100%; margin-top: 20px; letter-spacing: 1px; text-transform: uppercase; }
     </style>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00c96b">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <div class="container">
-    <h2>PWA Studio V4.1</h2>
+    <h2>STUDIO Slicer & Render</h2>
+    
+    <div class="studio-panel">
+        <input type="file" id="audio-input" accept="audio/*">
+        <div id="status-message">AWAITING AUDIO...</div>
+        
+        <div id="waveform-container">
+            <div id="waveform"></div>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        
+        <div class="time-display" id="time-display">00:00.0 / 00:00.0</div>
 
-    <div class="section">
-        <label>Titre de l'application</label>
-        <input type="text" id="appTitle" placeholder="Ex: My App" style="margin-bottom:15px">
-
-        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-                <label>Couleur Thème</label>
-                <input type="color" id="themeColor" value="#1e1e26">
-            </div>
-            <div style="flex: 2;">
-                <label>Icône (PNG)</label>
-                <input type="file" id="fileInput" accept="image/*">
-                <button id="btnImage" style="height: 50px; margin-top:0;">UPLOAD IMAGE</button>
-            </div>
+        <div class="switch-container">
+            <span style="font-size: 10px">SLICE</span>
+            <label class="switch">
+                <input type="checkbox" id="mode-switch">
+                <span class="slider"></span>
+            </label>
+            <span style="font-size: 10px">RANGE</span>
         </div>
 
-        <div class="header-row">
-            <label>Code HTML Source</label>
-            <button id="htmlCopyBtn" class="copy-btn" onclick="copyToClipboard('htmlInput')">Copier HTML Injecté</button>
-        </div>
-        <textarea id="htmlInput" placeholder="Collez votre code HTML complet ici..."></textarea>
+        <div class="main-controls">
+            <div class="transport-row">
+                <button id="btn-stop" disabled><i class="fas fa-stop"></i></button>
+                <button class="btn-play-pause" id="btn-play-pause" disabled><i class="fas fa-play" id="play-icon"></i></button>
+                
+                <div class="mode-slice mode-active" id="ctrl-slice">
+                    <button class="btn-cut" id="btn-cut" disabled><i class="fas fa-scissors"></i></button>
+                </div>
 
-        <button onclick="generateFiles()" style="background: #6200ee; margin-top: 15px;">GÉNÉRER LE PACK PWA</button>
+                <div class="mode-range" id="ctrl-range">
+                    <button class="btn-start" id="btn-start" disabled><i class="fas fa-marker"></i></button>
+                </div>
+            </div>
+
+            <button class="btn-create" id="btn-main-action" disabled>1. DÉCOUPER LES MORCEAUX</button>
+        </div>
     </div>
 
-    <div id="results" class="results-area">
-        <div class="section">
-            <div class="header-row"><label>manifest.json</label><button class="copy-btn" onclick="copyToClipboard('manifestOutput')">Copier</button></div>
-            <textarea id="manifestOutput" readonly></textarea>
-        </div>
-        <div class="section">
-            <div class="header-row"><label>sw.js</label><button class="copy-btn" onclick="copyToClipboard('swOutput')">Copier</button></div>
-            <textarea id="swOutput" readonly></textarea>
-        </div>
-    </div>
+    <div id="segments-list"></div>
 </div>
 
-<canvas id="canvas512" width="512" height="512" style="display:none;"></canvas>
-<footer>Made by Laiche Brahim 2026 Paris</footer>
+<div class="signature">Studio Engine v2.5 • 2026</div>
+
+<script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    let ws, audioBuffer = null;
+    let cuts = [0], ranges = [], isRangeMode = false;
+    let segmentsData = []; // Stocke {blob, imgBlob, duration}
+    let finalVideoUrl = null;
+
+    const statusMsg = document.getElementById('status-message');
+    const mainBtn = document.getElementById('btn-main-action');
+    const segmentsList = document.getElementById('segments-list');
+
+    // Init Wavesurfer
+    ws = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: '#00e5ff66',
+        progressColor: 'transparent',
+        cursorColor: '#fff',
+        height: 100,
+        barWidth: 2
+    });
+
+    // Chargement Audio
+    document.getElementById('audio-input').onchange = async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        statusMsg.innerText = "LOADING...";
+        const url = URL.createObjectURL(file);
+        ws.load(url);
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new AudioContext();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        statusMsg.innerText = "READY";
+        document.querySelectorAll('button').forEach(b => b.disabled = false);
+    };
+
+    // Mode Toggle
+    document.getElementById('mode-switch').onchange = e => {
+        isRangeMode = e.target.checked;
+        document.getElementById('ctrl-slice').classList.toggle('mode-active', !isRangeMode);
+        document.getElementById('ctrl-range').classList.toggle('mode-active', isRangeMode);
+    };
+
+    // UI Helpers
+    ws.on('audioprocess', t => {
+        const p = (t / ws.getDuration()) * 100;
+        document.getElementById('progress-bar').style.width = p + '%';
+        document.getElementById('time-display').innerText = `${t.toFixed(1)}s / ${ws.getDuration().toFixed(1)}s`;
+    });
+
+    document.getElementById('btn-play-pause').onclick = () => ws.isPlaying() ? ws.pause() : ws.play();
+    document.getElementById('btn-cut').onclick = () => {
+        const t = ws.getCurrentTime();
+        cuts.push(t); cuts.sort((a,b)=>a-b);
+        drawMarker(t);
+    };
+
+    function drawMarker(t) {
+        const m = document.createElement('div');
+        m.className = 'cut-marker';
+        m.style.left = (t / ws.getDuration() * 100) + '%';
+        document.getElementById('waveform').appendChild(m);
+    }
+
+    // ACTION PRINCIPALE
+    mainBtn.onclick = async () => {
+        if (mainBtn.classList.contains('download')) {
+            const a = document.createElement('a');
+            a.href = finalVideoUrl;
+            a.download = "studio_render.mp4";
+            a.click();
+            return;
+        }
+
+        if (mainBtn.classList.contains('rendering')) return;
+
+        // ETAPE 1: Générer la liste si elle est vide
+        if (segmentsData.length === 0) {
+            await prepareSegments();
+            mainBtn.innerText = "2. RENDER VIDEO (.MP4)";
+            return;
+        }
+
+        // ETAPE 2: Lancer le rendu FFmpeg
+        await startVideoRendering();
+    };
+
+    async function prepareSegments() {
+        segmentsList.innerHTML = "Processing audio...";
+        segmentsData = [];
+        let points = isRangeMode ? ranges : [...new Set([...cuts, ws.getDuration()])].sort((a,b)=>a-b);
+        
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = points[i], end = points[i+1];
+            if (end - start < 0.2) continue;
+
+            const audioBlob = await getSegmentBlob(start, end);
+            const id = Date.now() + i;
+            
+            const item = document.createElement('div');
+            item.className = 'segment-item';
+            item.innerHTML = `
+                <div class="seg-info">
+                    <span class="seg-title">PARTIE ${i+1}</span>
+                    <span class="seg-duration">${(end-start).toFixed(2)}s</span>
+                </div>
+                <label class="img-upload-label" for="img-${id}">
+                    <i class="fas fa-image"></i> PHOTO
+                    <input type="file" id="img-${id}" accept="image/*" hidden>
+                </label>
+                <img id="prev-${id}" class="img-preview">
+            `;
+            
+            segmentsList.appendChild(item);
+            
+            const input = item.querySelector('input');
+            input.onchange = async (e) => {
+                const f = e.target.files[0];
+                const prev = document.getElementById(`prev-${id}`);
+                prev.src = URL.createObjectURL(f);
+                prev.style.display = 'block';
+                segmentsData[i].imgBlob = f;
+            };
+
+            segmentsData.push({ audioBlob, imgBlob: null, duration: end - start });
+        }
+        segmentsList.prepend(document.createElement('hr'));
+    }
+
+    async function startVideoRendering() {
+        if (!ffmpeg.isLoaded()) {
+            statusMsg.innerText = "LOADING ENGINE...";
+            await ffmpeg.load();
+        }
+
+        mainBtn.disabled = true;
+        mainBtn.classList.add('rendering');
+        
+        try {
+            const inputPaths = [];
+            
+            for (let i = 0; i < segmentsData.length; i++) {
+                const seg = segmentsData[i];
+                const audioName = `a${i}.wav`;
+                const imgName = `i${i}.jpg`;
+                const outName = `v${i}.mp4`;
+
+                ffmpeg.FS('writeFile', audioName, await fetchFile(seg.audioBlob));
+                
+                if (seg.imgBlob) {
+                    ffmpeg.FS('writeFile', imgName, await fetchFile(seg.imgBlob));
+                } else {
+                    // Créer un fond noir si pas d'image
+                    await ffmpeg.run('-f', 'lavfi', '-i', 'color=c=black:s=720x720', '-t', '1', 'black.jpg');
+                    ffmpeg.FS('writeFile', imgName, ffmpeg.FS('readFile', 'black.jpg'));
+                }
+
+                // Création du clip individuel (Image + Audio)
+                // On force une résolution standard 720x720 (Carré type Instagram/TikTok)
+                await ffmpeg.run(
+                    '-loop', '1', '-i', imgName, 
+                    '-i', audioName, 
+                    '-c:v', 'libx264', '-t', seg.duration.toString(), 
+                    '-pix_fmt', 'yuv420p', '-vf', 'scale=720:720',
+                    outName
+                );
+                inputPaths.push(`file ${outName}`);
+            }
+
+            // Concaténation de tous les clips
+            ffmpeg.FS('writeFile', 'concat.txt', inputPaths.join('\n'));
+            statusMsg.innerText = "FUSING CLIPS...";
+            
+            await ffmpeg.run('-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'final.mp4');
+
+            const data = ffmpeg.FS('readFile', 'final.mp4');
+            finalVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            
+            mainBtn.disabled = false;
+            mainBtn.innerText = "DOWNLOAD VIDEO";
+            mainBtn.classList.remove('rendering');
+            mainBtn.classList.add('download');
+            statusMsg.innerText = "RENDER COMPLETE!";
+            statusMsg.style.color = "var(--accent-green)";
+
+        } catch (err) {
+            console.error(err);
+            statusMsg.innerText = "RENDER ERROR";
+            mainBtn.disabled = false;
+        }
+    }
+
+    // Fonctions Audio existantes (simplifiées)
+    async function getSegmentBlob(start, end) {
+        const sr = audioBuffer.sampleRate;
+        const len = Math.floor((end - start) * sr);
+        const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, len, sr);
+        const source = offlineCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(offlineCtx.destination);
+        source.start(0, start, end - start);
+        const renderedBuffer = await offlineCtx.startRendering();
+        return bufferToWave(renderedBuffer, len);
+    }
+
+    function bufferToWave(abuffer, len) {
+        let numOfChan = abuffer.numberOfChannels, length = len * numOfChan * 2 + 44,
+            buffer = new ArrayBuffer(length), view = new DataView(buffer),
+            channels = [], i, sample, offset = 0, pos = 0;
+        const set16 = d => { view.setInt16(pos, d, true); pos += 2; };
+        const set32 = d => { view.setUint32(pos, d, true); pos += 4; };
+        set32(0x46464952); set32(length - 8); set32(0x45564157);
+        set32(0x20746d66); set32(16); set16(1); set16(numOfChan);
+        set32(abuffer.sampleRate); set32(abuffer.sampleRate * 2 * numOfChan);
+        set16(numOfChan * 2); set16(16); set32(0x61746164); set32(length - pos - 4);
+        for (i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
+        while (pos < length) {
+            for (i = 0; i < numOfChan; i++) {
+                sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                set16(sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+            }
+            offset++;
+        }
+        return new Blob([buffer], { type: "audio/wav" });
+    }
+</script>
 
     <style>
         #pwaInstallBtn {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #1e1e26; color: white; border: none; padding: 12px 24px;
+            background: #00c96b; color: white; border: none; padding: 12px 24px;
             border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             display: none; z-index: 10000; font-weight: bold; cursor: pointer;
         }

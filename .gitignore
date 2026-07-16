@@ -1,0 +1,26 @@
+# Node.js
+node_modules/
+npm-debug.log
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Fichiers de build Android/iOS (on garde les sources)
+android/app/build/
+ios/App/App/build/
+
+# Temporary files
+*.tmp
+*.log
+
+# Capacitor config (si des infos sensibles)
+# capacitor.config.json
+
+# Permissions config (optionnel)
+capacitor.permissions.json
